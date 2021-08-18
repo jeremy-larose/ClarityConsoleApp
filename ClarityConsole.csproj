@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+        <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
+        <PreserveCompilationContext>true</PreserveCompilationContext>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="FluentEmail.Core" Version="3.0.0" />
+      <PackageReference Include="FluentEmail.Razor" Version="3.0.0" />
+      <PackageReference Include="FluentEmail.Smtp" Version="3.0.0" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.9" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="5.0.9">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.7" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="ClarityMailLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+        <HintPath>..\ClarityMailLibrary\ClarityMailLibrary\bin\Debug\net5.0\ClarityMailLibrary.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+</Project>
