@@ -1,6 +1,6 @@
 ﻿using System.Data.Entity;
 using System.Data.Entity.ModelConfiguration.Conventions;
-using ClarityEmailerLibrary;
+using ClarityMailLibrary;
 using FluentEmail.Core;
 
 namespace ClarityConsole.Data

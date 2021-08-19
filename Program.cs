@@ -1,79 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Threading.Tasks;
 using ClarityConsole.Data;
 using ClarityConsole.Helpers;
-using ClarityEmailerLibrary;
+using ClarityMailLibrary;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace ClarityConsole
-
 {
-    /*
-    class Program
-    {
-        public static IConfiguration Configuration { get; set; }
-        private static string _body = "Test mail";
-        private static string _subject = "This is just a test";
-        private static string _sender = "clarity@clarityventures.com";
-        private static List<string> _recipients = new List<string>();
-
-        private const int Retries = 3;
-
-        static void Main(string[] args)
-        {
-            var configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .AddEnvironmentVariables()
-                .Build();
-
-            SeedData();
-
-            Log.Logger = new LoggerConfiguration()
-                .ReadFrom.Configuration(configuration)
-                .CreateLogger();
-
-            Log.Information("Application Starting Up.");
-            EmailSender mailer = new EmailSender();
-
-            foreach (var recipient in _recipients)
-            {
-                Log.Information( $"Sending Email to {recipient}.");
-                mailer.SendAsync(recipient, recipient, _subject, _body, _body, Retries);
-            }
-            
-            Log.Information( "Application finished.");
-        }
-
-        static void SeedData()
-        {
-            _recipients.Add("jeremy@jeremylarose.com");
-            _recipients.Add("toni@tonilarose.com");
-            _recipients.Add("macey@maceyblouw.com");
-        }
-    }
-} */
-
     class Program
     {
         private const string CommandListEmails = "l";
         private const string CommandListEmail = "i";
         private const string CommandAddEmail = "a";
-        private const string CommandUpdateEmail = "u";
         private const string CommandDeleteEmail = "d";
-        private const string CommandSave = "s";
         private const string CommandCancel = "c";
         private const string CommandQuit = "q";
-        private const string CommandSendAllEmail = "g";
+        private const string CommandSendAllEmail = "s";
 
         private static List<string> _recipients = new List<string>();
-        private static string _sender = "clarity@clarityventures.com";
-        private static string _body = "Test mail";
-        private static string _subject = "This is just a test.";
         private const int Retries = 3;
         private static IConfiguration Configuration { get; set; }
 
@@ -86,7 +33,8 @@ namespace ClarityConsole
                 .Build();
 
             IServiceCollection services = new ServiceCollection();
-            //services.AddDbContext<MyDbContext>(options => options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddDbContext<ApplicationDbContext>( options => 
+                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
             services.AddScoped<IClarityMail, ClarityMail>();
 
             Log.Logger = new LoggerConfiguration()
@@ -143,15 +91,14 @@ namespace ClarityConsole
                 int emailCount = Repository.GetEmailCount();
                 if (emailCount > 0)
                 {
-                    ConsoleHelper.Output($"Enter a Number 1-{emailCount} :");
+                    ConsoleHelper.Output($"Enter a Number 1-{emailCount} | ");
                 }
 
-                ConsoleHelper.OutputLine("G - Send All Emails, A - Add, Q - Quit", false);
+                ConsoleHelper.OutputLine("[S]end All, [A]dd, [D]elete, or [Q]uit :", false);
 
                 // Get the  next command from user.
                 command = ConsoleHelper.ReadInput("Enter a command: ", true);
             }
-
         }
 
         private static bool AttemptDisplayEmail(string command, IList<int> emailIds)
@@ -172,7 +119,6 @@ namespace ClarityConsole
             }
 
             // Successfully returned an emailId
-
             if (emailId != null)
             {
                 DisplayEmail(emailId.Value);
@@ -209,7 +155,7 @@ namespace ClarityConsole
             ConsoleHelper.OutputLine("SEND EMAIL");
             foreach (var email in Repository.GetEmails())
             {
-                await email.SendAsync(email.MailTo, email.MailTo, email.MailFrom, _subject, _body, Retries);
+                await email.SendAsync(email.MailTo, email.MailTo, email.MailFrom, email.MailSubject, email.MailBody, Retries);
             }
         }
 

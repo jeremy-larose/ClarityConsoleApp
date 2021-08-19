@@ -2,7 +2,7 @@
 using System.Data.Entity;
 using System.Diagnostics;
 using System.Linq;
-using ClarityEmailerLibrary;
+using ClarityMailLibrary;
 
 namespace ClarityConsole.Data
 {
@@ -24,9 +24,9 @@ namespace ClarityConsole.Data
         }
 
         /// <summary>
-        /// Returns a count of the comic books.
+        /// Returns a count of the emails.
         /// </summary>
-        /// <returns>An integer count of the comic books.</returns>
+        /// <returns>An integer count of the emails.</returns>
         public static int GetEmailCount()
         {
             using (Context context = GetContext())
@@ -36,10 +36,9 @@ namespace ClarityConsole.Data
         }
 
         /// <summary>
-        /// Returns a list of comic books ordered by the series title 
-        /// and issue number.
+        /// Returns a list of emails.
         /// </summary>
-        /// <returns>An IList collection of ComicBook entity instances.</returns>
+        /// <returns>An IList collection of Email entity instances.</returns>
         public static IList<ClarityMail> GetEmails()
         {
             using (Context context = GetContext())
@@ -64,24 +63,23 @@ namespace ClarityConsole.Data
         }
 
         /// <summary>
-        /// Returns a single comic book.
+        /// Returns a single email.
         /// </summary>
-        /// <param name="comicBookId">The comic book ID to retrieve.</param>
-        /// <returns>A fully populated ComicBook entity instance.</returns>
+        /// <param name="emailId">The email ID to retrieve.</param>
+        /// <returns>A fully populated ClarityMail entity instance.</returns>
         public static ClarityMail GetEmail(int emailId)
         {
             using (Context context = GetContext())
             {
                 return context.Emails
-                    .Where(e => e.Id == emailId)
-                    .SingleOrDefault();
+                    .SingleOrDefault(e => e.Id == emailId);
             }
         }
         
         /// <summary>
-        /// Adds a comic book.
+        /// Adds an email.
         /// </summary>
-        /// <param name="comicBook">The ComicBook entity instance to add.</param>
+        /// <param name="email">The ClarityMail entity instance to add.</param>
         public static void AddEmail(ClarityMail email)
         {
             using (Context context = GetContext())
@@ -92,9 +90,9 @@ namespace ClarityConsole.Data
         }
         
         /// <summary>
-        /// Deletes a comic book.
+        /// Deletes an email.
         /// </summary>
-        /// <param name="comicBookId">The email ID to delete.</param>
+        /// <param name="emailId">The email ID to delete.</param>
         public static void DeleteEmail(int emailId)
         {
             using (Context context = GetContext())
@@ -104,83 +102,21 @@ namespace ClarityConsole.Data
                 context.SaveChanges();
             }
         } 
-/*
+
         /// <summary>
-        /// Returns a list of series ordered by title.
+        /// Updates an email.
         /// </summary>
-        /// <returns>An IList collection of Series entity instances.</returns>
-        public static IList<Series> GetSeries()
+        /// <param name="email">The ClarityMail entity instance to update.</param>
+        public static void UpdateEmail(ClarityMail email )
         {
             using (Context context = GetContext())
             {
-                return context.Series
-                    .OrderBy(s => s.Title)
-                    .ToList();
-            }
-        }
-
-        /// <summary>
-        /// Returns a single series.
-        /// </summary>
-        /// <param name="seriesId">The series ID to retrieve.</param>
-        /// <returns>A Series entity instance.</returns>
-        public static Series GetSeries(int seriesId)
-        {
-            using (Context context = GetContext())
-            {
-                return context.Series
-                    .Where(s => s.Id == seriesId)
-                    .SingleOrDefault();
-            }
-        }
-
-        /// <summary>
-        /// Returns a list of artists ordered by name.
-        /// </summary>
-        /// <returns>An IList collection of Artist entity instances.</returns>
-        public static IList<Artist> GetArtists()
-        {
-            using (Context context = GetContext())
-            {
-                return context.Artists
-                    .OrderBy(a => a.Name)
-                    .ToList();
-            }
-        }
-
-        /// <summary>
-        /// Returns a list of roles ordered by name.
-        /// </summary>
-        /// <returns>An IList collection of Role entity instances.</returns>
-        public static IList<Role> GetRoles()
-        {
-            using (Context context = GetContext())
-            {
-                return context.Roles
-                    .OrderBy(r => r.Name)
-                    .ToList();
-            }
-        }
-
-
-
-        /// <summary>
-        /// Updates a comic book.
-        /// </summary>
-        /// <param name="comicBook">The ComicBook entity instance to update.</param>
-        public static void UpdateComicBook(ComicBook comicBook)
-        {
-            using (Context context = GetContext())
-            {
-                context.ComicBooks.Attach(comicBook);
-                var comicBookEntry = context.Entry(comicBook);
+                context.Emails.Attach(email);
+                var comicBookEntry = context.Entry(email);
                 comicBookEntry.State = EntityState.Modified;
-                //comicBookEntry.Property("IssueNumber").IsModified = false;
 
                 context.SaveChanges();
             }
         }
-*/
-
     } 
 }
