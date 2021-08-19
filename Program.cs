@@ -1,54 +1,296 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
+using ClarityConsole.Data;
+using ClarityConsole.Helpers;
 using ClarityEmailerLibrary;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 
 namespace ClarityConsole
+
 {
+    /*
     class Program
     {
+        public static IConfiguration Configuration { get; set; }
+        private static string _body = "Test mail";
+        private static string _subject = "This is just a test";
+        private static string _sender = "clarity@clarityventures.com";
+        private static List<string> _recipients = new List<string>();
+
+        private const int Retries = 3;
+
+        static void Main(string[] args)
+        {
+            var configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json")
+                .AddEnvironmentVariables()
+                .Build();
+
+            SeedData();
+
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(configuration)
+                .CreateLogger();
+
+            Log.Information("Application Starting Up.");
+            EmailSender mailer = new EmailSender();
+
+            foreach (var recipient in _recipients)
+            {
+                Log.Information( $"Sending Email to {recipient}.");
+                mailer.SendAsync(recipient, recipient, _subject, _body, _body, Retries);
+            }
+            
+            Log.Information( "Application finished.");
+        }
+
+        static void SeedData()
+        {
+            _recipients.Add("jeremy@jeremylarose.com");
+            _recipients.Add("toni@tonilarose.com");
+            _recipients.Add("macey@maceyblouw.com");
+        }
+    }
+} */
+
+    class Program
+    {
+        private const string CommandListEmails = "l";
+        private const string CommandListEmail = "i";
+        private const string CommandAddEmail = "a";
+        private const string CommandUpdateEmail = "u";
+        private const string CommandDeleteEmail = "d";
+        private const string CommandSave = "s";
+        private const string CommandCancel = "c";
+        private const string CommandQuit = "q";
+        private const string CommandSendAllEmail = "g";
+
         private static List<string> _recipients = new List<string>();
         private static string _sender = "clarity@clarityventures.com";
         private static string _body = "Test mail";
         private static string _subject = "This is just a test.";
         private const int Retries = 3;
+        private static IConfiguration Configuration { get; set; }
 
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
+            string command = CommandListEmails;
+            IList<int> emailIds = null;
 
-            _recipients.Add("Jeremy@jeremylarose.com");
-            _recipients.Add("toni@tonilarose.com");
-            _recipients.Add("macey@maceyblouw.com");
+            var configuration = new ConfigurationBuilder()
+                .Build();
 
-            ClarityMail mail = new ClarityMail();
-            await mail.SendMessages(_recipients, _sender, _body, _subject, Retries);
+            IServiceCollection services = new ServiceCollection();
+            //services.AddDbContext<MyDbContext>(options => options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddScoped<IClarityMail, ClarityMail>();
 
-            Console.WriteLine("Application Complete.");
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(configuration)
+                .WriteTo.RollingFile(@"C:\Logs\ClarityConsole-{Date}A.txt", retainedFileCountLimit: 10 )
+                .CreateLogger();
+            
+            try
+            {
+                Log.Information("Application Starting Up.");
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "The application failed to start correctly.");
+                throw;
+            }
+            finally
+            {
+                Log.Information("Application Finished.");
+                Log.CloseAndFlush();
+            }
+
+            while (command != CommandQuit)
+            {
+                switch (command)
+                {
+                    case CommandListEmails:
+                        emailIds = ListEmails();
+                        break;
+                    case CommandAddEmail:
+                        AddEmail();
+                        command = CommandListEmails;
+                        continue;
+                    case CommandSendAllEmail:
+                        SendAllEmails();
+                        break;
+                    default:
+                        if (AttemptDisplayEmail(command, emailIds))
+                        {
+                            command = CommandListEmails;
+                            continue;
+                        }
+                        else
+                        {
+                            ConsoleHelper.OutputLine("Sorry, I didn't understand that line.");
+                        }
+
+                        break;
+                }
+
+                // List the available commands
+                ConsoleHelper.OutputBlankLine();
+                ConsoleHelper.Output("Commands: ");
+                int emailCount = Repository.GetEmailCount();
+                if (emailCount > 0)
+                {
+                    ConsoleHelper.Output($"Enter a Number 1-{emailCount} :");
+                }
+
+                ConsoleHelper.OutputLine("G - Send All Emails, A - Add, Q - Quit", false);
+
+                // Get the  next command from user.
+                command = ConsoleHelper.ReadInput("Enter a command: ", true);
+            }
+
         }
 
-        public class Startup
+        private static bool AttemptDisplayEmail(string command, IList<int> emailIds)
         {
-            public Startup(IConfiguration configuration)
+            var successful = false;
+            int? emailId = null;
+
+            if (emailIds != null)
             {
-                Configuration = configuration;
+                int lineNumber = 0;
+                int.TryParse(command, out lineNumber);
+
+                if (lineNumber > 0 && lineNumber <= emailIds.Count)
+                {
+                    emailId = emailIds[lineNumber - 1];
+                    successful = true;
+                }
             }
 
-            public IConfiguration Configuration { get; }
+            // Successfully returned an emailId
 
-            public void ConfigureServices(IServiceCollection services)
+            if (emailId != null)
             {
-                services.AddDbContext<ConsoleDbContext>(options =>
-                    options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
+                DisplayEmail(emailId.Value);
             }
 
-            public void Configure(IApplicationBuilder app)
-            {
+            return successful;
+        }
 
+        private static void AddEmail()
+        {
+            ConsoleHelper.ClearOutput();
+            ConsoleHelper.OutputLine("ADD EMAIL ADDRESS");
+
+            // Get the email details from the user 
+            var email = new ClarityMail()
+            {
+                MailBody = GetMailBody(),
+                MailFrom = GetMailFrom(),
+                MailSubject = GetMailSubject(),
+                MailTo = GetMailTo(),
+            };
+            Repository.AddEmail(email);
+        }
+
+        private static string GetMailBody() => ConsoleHelper.ReadInput("Enter the body of the email: ");
+        private static string GetMailFrom() => ConsoleHelper.ReadInput("Enter the return address for the email: ");
+        private static string GetMailSubject() => ConsoleHelper.ReadInput("Enter the subject for the email: ");
+        private static string GetMailTo() => ConsoleHelper.ReadInput("Enter the email address of the recipient: ");
+
+
+        private static async void SendAllEmails()
+        {
+            ConsoleHelper.ClearOutput();
+            ConsoleHelper.OutputLine("SEND EMAIL");
+            foreach (var email in Repository.GetEmails())
+            {
+                await email.SendAsync(email.MailTo, email.MailTo, email.MailFrom, _subject, _body, Retries);
             }
+        }
+
+        private static IList<int> ListEmails()
+        {
+            var EmailIds = new List<int>();
+            IList<ClarityMail> emails = Repository.GetEmails();
+            ConsoleHelper.ClearOutput();
+            ConsoleHelper.OutputLine("EMAILS:");
+            ConsoleHelper.OutputBlankLine();
+
+            foreach (var email in emails)
+            {
+                EmailIds.Add(email.Id);
+                ConsoleHelper.OutputLine($"{emails.IndexOf(email) + 1}) {email.MailTo}");
+            }
+
+            return EmailIds;
+        }
+
+        private static void DisplayEmail(int emailId)
+        {
+            string command = CommandListEmail;
+
+            while (command != CommandCancel)
+            {
+                switch (command)
+                {
+                    case CommandListEmails:
+                        ListEmail(emailId);
+                        break;
+                    case CommandDeleteEmail:
+                        if (DeleteEmail(emailId))
+                        {
+                            command = CommandCancel;
+                        }
+                        else
+                        {
+                            command = CommandListEmail;
+                        }
+
+                        continue;
+                    default:
+                        ConsoleHelper.OutputLine("Sorry, I don't understand that command.");
+                        break;
+                }
+
+                ConsoleHelper.OutputBlankLine();
+                ConsoleHelper.Output("Commands: ");
+                ConsoleHelper.OutputLine("D - Delete, C - Cancel", false);
+                // Get the next command
+                command = ConsoleHelper.ReadInput("Enter a Command: ", true);
+            }
+        }
+
+        private static bool DeleteEmail(int emailId)
+        {
+            var successful = false;
+
+            string input = ConsoleHelper.ReadInput("Are you sure you want to delete this email (Y/N)? ", true);
+
+            // If the user entered "y", delete the email
+            if (input == "y")
+            {
+                Repository.DeleteEmail(emailId);
+                successful = true;
+            }
+
+            return successful;
+        }
+
+        private static void ListEmail(int emailId)
+        {
+            ClarityMail email = Repository.GetEmail(emailId);
+            ConsoleHelper.ClearOutput();
+
+            ConsoleHelper.OutputLine("EMAIL DETAIL");
+            ConsoleHelper.OutputLine($"Email From: {email.MailFrom}");
+            ConsoleHelper.OutputLine($"Email To: {email.MailTo}");
+            ConsoleHelper.OutputLine($"Email Subject: {email.MailSubject}");
+            ConsoleHelper.OutputLine($"Email Body: {email.MailBody}");
         }
     }
 }
