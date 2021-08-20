@@ -33,8 +33,6 @@ namespace ClarityConsole
                 .Build();
 
             IServiceCollection services = new ServiceCollection();
-            services.AddDbContext<ApplicationDbContext>( options => 
-                options.UseNpgsql(Configuration.GetConnectionString("DefaultConnection")));
             services.AddScoped<IClarityMail, ClarityMail>();
 
             Log.Logger = new LoggerConfiguration()
@@ -135,14 +133,15 @@ namespace ClarityConsole
             // Get the email details from the user 
             var email = new ClarityMail()
             {
-                MailBody = GetMailBody(),
+                MailDisplayName = GetMailDisplayName(),
                 MailFrom = GetMailFrom(),
-                MailSubject = GetMailSubject(),
                 MailTo = GetMailTo(),
+                MailSubject = GetMailSubject(),
+                MailBody = GetMailBody()
             };
             Repository.AddEmail(email);
         }
-
+        private static string GetMailDisplayName() => ConsoleHelper.ReadInput("Enter the display name of the sender: " );
         private static string GetMailBody() => ConsoleHelper.ReadInput("Enter the body of the email: ");
         private static string GetMailFrom() => ConsoleHelper.ReadInput("Enter the return address for the email: ");
         private static string GetMailSubject() => ConsoleHelper.ReadInput("Enter the subject for the email: ");
@@ -155,7 +154,11 @@ namespace ClarityConsole
             ConsoleHelper.OutputLine("SEND EMAIL");
             foreach (var email in Repository.GetEmails())
             {
-                await email.SendAsync(email.MailTo, email.MailTo, email.MailFrom, email.MailSubject, email.MailBody, Retries);
+                // NOTE: Uncommenting below will result in sending via actual SMTP service and will require changing appsettings.json
+                // await email.SendAsync(email.MailTo, email.MailTo, email.MailFrom, email.MailSubject, email.MailBody, Retries);
+
+                // This sends via localhost port 35 with SSL disabled for Papercut testing. 
+                await email.SendTestAsync(email.MailDisplayName, email.MailTo, email.MailFrom, email.MailSubject, email.MailBody, Retries);
             }
         }
 
@@ -196,7 +199,6 @@ namespace ClarityConsole
                         {
                             command = CommandListEmail;
                         }
-
                         continue;
                     default:
                         ConsoleHelper.OutputLine("Sorry, I don't understand that command.");
