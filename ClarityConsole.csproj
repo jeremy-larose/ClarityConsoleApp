@@ -37,7 +37,7 @@
 
     <ItemGroup>
       <Reference Include="ClarityMailLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
-        <HintPath>..\ClarityMailLibrary\ClarityMailLibrary\obj\Debug\net5.0\ClarityMailLibrary.dll</HintPath>
+        <HintPath>.\ClarityMailLibrary.dll</HintPath>
       </Reference>
     </ItemGroup>
 
